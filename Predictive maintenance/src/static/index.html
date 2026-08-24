@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AutoPredict AI // Predictive Maintenance Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="brand-section">
+      <span class="logo-badge">AUTOPREDICT AI</span>
+      <div>
+        <h1 class="brand-title">Automotive Production <span>Condition Intelligence</span></h1>
+        <div class="plant-context">PLANT: DETROIT-ASSEMBLY-01 • PURDUE LEVEL 3.5 DMZ</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div class="live-indicator">
+        <div class="pulse-dot"></div>
+        LIVE TELEMETRY STREAMING
+      </div>
+      <button class="btn btn-primary" onclick="AGENT_CHAT.toggle()">
+        <span>✦</span> AI Copilot
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-container">
+
+    <!-- Executive Metrics Grid -->
+    <section class="metrics-row">
+      <div class="metric-card healthy-card">
+        <div class="metric-header">Plant Health Index</div>
+        <div class="metric-value" id="plantHealthVal">84.6<span style="font-size:16px; color:#94a3b8;">/100</span></div>
+        <div class="metric-sub">▲ +1.4% vs last week baseline</div>
+      </div>
+
+      <div class="metric-card critical-card">
+        <div class="metric-header">Active Critical Assets (24-72h)</div>
+        <div class="metric-value" id="activeCriticalVal" style="color:var(--status-critical);">3 Assets</div>
+        <div class="risk-pills">
+          <span class="pill pill-critical" id="pillCritCount">3</span>
+          <span class="pill pill-warning" id="pillWarnCount">2</span>
+          <span class="pill pill-watch" id="pillWatchCount">1</span>
+          <span class="pill pill-healthy" id="pillHealthyCount">6</span>
+        </div>
+      </div>
+
+      <div class="metric-card accent-card">
+        <div class="metric-header">Downtime Avoided (MTD)</div>
+        <div class="metric-value" id="downtimeAvoidedVal">38.5h</div>
+        <div class="metric-sub">Across 4 planned buffer interventions</div>
+      </div>
+
+      <div class="metric-card accent-card">
+        <div class="metric-header">Estimated Cost Saved</div>
+        <div class="metric-value" id="costSavedVal" style="color:var(--status-healthy);">$1.92M</div>
+        <div class="metric-sub">Downtime & tooling rebuild savings</div>
+      </div>
+
+      <div class="metric-card warning-card">
+        <div class="metric-header">Model Accuracy (90-Day)</div>
+        <div class="metric-value" id="accuracyVal">94.2%</div>
+        <div class="metric-sub">Dual-Stage XGBoost + Anomaly Scorer</div>
+      </div>
+    </section>
+
+    <!-- Filter Tabs Bar -->
+    <section class="filter-tabs-bar">
+      <div class="tabs-group">
+        <button class="tab-btn active" data-shop="ALL">All Shops (12)</button>
+        <button class="tab-btn" data-shop="STAMPING">Stamping (3)</button>
+        <button class="tab-btn" data-shop="BIW">Body-in-White (3)</button>
+        <button class="tab-btn" data-shop="PAINT">Paint Shop (2)</button>
+        <button class="tab-btn" data-shop="POWERTRAIN">Powertrain (2)</button>
+        <button class="tab-btn" data-shop="ASSEMBLY">Final Assembly (2)</button>
+      </div>
+      <div style="font-size:12px; color:var(--text-muted);">
+        Sort: <strong style="color:var(--text-primary);">Composite Risk Descending</strong>
+      </div>
+    </section>
+
+    <!-- Plant Risk Priority Table -->
+    <section class="table-container">
+      <div class="table-header-bar">
+        <div class="table-title">
+          <span>⚡</span> Real-Time Equipment Risk Prioritization Board (24–72h Horizon)
+        </div>
+        <button class="btn" onclick="fetchMachineList()">Refresh Feed</button>
+      </div>
+      <table class="industrial-table">
+        <thead>
+          <tr>
+            <th>Asset Tag & Name</th>
+            <th>Shop</th>
+            <th>Criticality</th>
+            <th>Risk Tier</th>
+            <th>Failure Prob (24-72h)</th>
+            <th>Predicted Horizon</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="riskTableBody">
+          <!-- Populated by app.js -->
+        </tbody>
+      </table>
+    </section>
+
+  </main>
+
+  <!-- Machine Detail Modal Workspace -->
+  <div class="modal-overlay" id="machineModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <h2 id="modalAssetTag" style="font-family:var(--font-mono); color:var(--accent-cyan);">STAMP-P04</h2>
+            <span id="modalRiskTier" class="pill pill-critical">CRITICAL</span>
+          </div>
+          <div id="modalMachineName" style="font-size:14px; color:var(--text-secondary);">Stamping Press 04 Main Drive</div>
+          <div id="modalShop" style="font-size:12px; color:var(--text-muted); font-family:var(--font-mono);">STAMPING • TIER_1_BOTTLENECK</div>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button class="btn btn-primary" onclick="openCopilotForAsset(currentMachineDetailId)">
+            AI Diagnostic Reasoning
+          </button>
+          <button class="btn" onclick="closeMachineDetail()">✕ Close</button>
+        </div>
+      </div>
+
+      <div class="modal-body">
+
+        <!-- Prediction Banner -->
+        <div style="background:#0f172a; border:1px solid #1e293b; border-radius:8px; padding:16px; display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; text-align:center;">
+          <div>
+            <div style="font-size:11px; color:#94a3b8; text-transform:uppercase;">Failure Probability (24-72h)</div>
+            <div id="detailFailProb" style="font-size:24px; font-weight:700; color:var(--status-critical); font-family:var(--font-mono);">91.5%</div>
+          </div>
+          <div>
+            <div style="font-size:11px; color:#94a3b8; text-transform:uppercase;">Predicted Horizon Window</div>
+            <div id="detailHorizon" style="font-size:24px; font-weight:700; color:var(--accent-cyan); font-family:var(--font-mono);">48.5 Hours</div>
+          </div>
+          <div>
+            <div style="font-size:11px; color:#94a3b8; text-transform:uppercase;">Model Confidence</div>
+            <div id="detailConfidence" style="font-size:24px; font-weight:700; color:var(--status-healthy); font-family:var(--font-mono);">94%</div>
+          </div>
+        </div>
+
+        <!-- Telemetry & SHAP Grid -->
+        <div class="diagnostic-grid">
+          
+          <!-- Telemetry Graph -->
+          <div class="chart-panel">
+            <div class="chart-title">
+              <span>Drive End Vibration Telemetry (72-Hour History)</span>
+              <span style="font-family:var(--font-mono); color:#06b6d4;">mm/s RMS</span>
+            </div>
+            <canvas id="telemetryChartCanvas"></canvas>
+          </div>
+
+          <!-- SHAP Feature Attribution Panel -->
+          <div class="chart-panel">
+            <div class="chart-title">
+              <span>TreeSHAP Root Cause Attribution</span>
+              <span style="color:#94a3b8;">Impact %</span>
+            </div>
+            <div class="shap-list" id="shapList">
+              <!-- Populated by app.js -->
+            </div>
+          </div>
+
+        </div>
+
+        <!-- FFT Spectrum Analysis -->
+        <div class="chart-panel">
+          <div class="chart-title">
+            <span>Fast Fourier Transform (FFT) Power Spectrum & Bearing Harmonics</span>
+            <span style="color:#8b5cf6; font-family:var(--font-mono);">Real-Time 4kHz Sampling</span>
+          </div>
+          <canvas id="fftChartCanvas"></canvas>
+        </div>
+
+        <!-- Interactive Fault Injection Controls (Testing Tool) -->
+        <div style="background:#131b2b; border:1px solid #23334d; border-radius:8px; padding:16px;">
+          <div style="font-weight:700; margin-bottom:8px; color:var(--accent-cyan);">
+            🧪 Interactive Fault Injection Simulator (Live Verification Tool)
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn btn-critical" onclick="injectFaultFromModal('BEARING_INNER_RACE')">
+              Inject Bearing Inner Race Fault (BPFI)
+            </button>
+            <button class="btn btn-critical" onclick="injectFaultFromModal('LUBRICATION_STARVATION')">
+              Inject Lubrication Starvation
+            </button>
+            <button class="btn btn-critical" onclick="injectFaultFromModal('STATOR_WINDING_FAULT')">
+              Inject Stator Winding Imbalance
+            </button>
+            <button class="btn" onclick="clearFaultFromModal()">
+              ✓ Reset to Nominal Baseline
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Conversational Copilot Drawer -->
+  <aside class="copilot-drawer" id="copilotDrawer">
+    <div class="copilot-header">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="color:var(--accent-cyan); font-weight:800;">✦</span>
+        <strong>AutoPredict AI Copilot</strong>
+      </div>
+      <button class="btn" style="padding:2px 8px; font-size:11px;" onclick="AGENT_CHAT.toggle()">✕</button>
+    </div>
+
+    <div class="copilot-messages" id="chatMessages">
+      <div class="chat-bubble agent">
+        Hello Marcus. I am monitoring all 12 plant assets across Detroit Assembly. 
+        Ask me for a plant overview, deep diagnosis on any machine, or a prescriptive repair plan.
+      </div>
+    </div>
+
+    <div style="padding: 0 16px 8px 16px;">
+      <div class="quick-chips">
+        <span class="chip" onclick="AGENT_CHAT.sendQuery('Give me an overview of highest risk machines')">Top Risk Overview</span>
+        <span class="chip" onclick="AGENT_CHAT.sendQuery('Diagnose Stamping Press 04')">Diagnose Press 04</span>
+        <span class="chip" onclick="AGENT_CHAT.sendQuery('Generate prescriptive repair plan for Press 04')">Prescribe Repair</span>
+        <span class="chip" onclick="AGENT_CHAT.sendQuery('Calculate downtime financial impact for Press 04')">Financial Impact</span>
+      </div>
+    </div>
+
+    <div class="copilot-input-bar">
+      <input type="text" class="copilot-input" id="chatInput" placeholder="Ask AI Copilot about machine health, repair plans..." onkeydown="if(event.key==='Enter') AGENT_CHAT.sendQuery()">
+      <button class="btn btn-primary" onclick="AGENT_CHAT.sendQuery()">Send</button>
+    </div>
+  </aside>
+
+  <!-- Floating Copilot Launch Button -->
+  <button class="copilot-trigger-btn" onclick="AGENT_CHAT.toggle()">
+    <span>✦</span> Ask AI Copilot
+  </button>
+
+  <!-- Scripts -->
+  <script src="/static/js/charts.js"></script>
+  <script src="/static/js/agent_chat.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
